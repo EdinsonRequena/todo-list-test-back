@@ -1,5 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import * as taskService from '../services/task.service';
+import type { StatusFilter } from '../services/task.service';
+
+const toInt = (v: string | undefined, def: number) =>
+  Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : def;
 
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
@@ -14,15 +18,17 @@ export async function create(req: Request, res: Response, next: NextFunction) {
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = (req as any).user.id;
-    const { status, q, page, limit } = req.query;
-    const tasks = await taskService.listTasks({
+    const { status = 'all', q = '', page, limit } = req.query;
+
+    const data = await taskService.listTasks({
       userId,
-      status: status as any,
-      q: q as string,
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
+      status: status as StatusFilter,
+      q: String(q),
+      page: toInt(page as string | undefined, 1),
+      limit: toInt(limit as string | undefined, 20),
     });
-    res.json(tasks);
+
+    res.json(data);
   } catch (err) {
     next(err);
   }
@@ -32,11 +38,7 @@ export async function update(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = (req as any).user.id;
     const task = await taskService.updateTask(Number(req.params.id), userId, req.body);
-
-    res.json({
-      message: 'Task updated successfully.',
-      task,
-    });
+    res.json({ message: 'Task updated successfully.', task });
   } catch (err) {
     next(err);
   }
@@ -56,11 +58,7 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = (req as any).user.id;
     const task = await taskService.deleteTask(Number(req.params.id), userId);
-
-    res.json({
-      message: 'Task deleted successfully.',
-      task,
-    });
+    res.json({ message: 'Task deleted successfully.', task });
   } catch (err) {
     next(err);
   }

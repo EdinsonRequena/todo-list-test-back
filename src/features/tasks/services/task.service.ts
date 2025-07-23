@@ -1,9 +1,12 @@
 import { prisma } from '../../../config/prisma';
+import type { Prisma } from '@prisma/client';
 import { ApiError } from '../../../utils/api-error';
 
-interface ListParams {
+export type StatusFilter = 'all' | 'completed' | 'pending';
+
+export interface ListParams {
   userId: number;
-  status?: 'completed' | 'pending';
+  status?: StatusFilter;
   q?: string;
   page?: number;
   limit?: number;
@@ -21,23 +24,35 @@ export async function createTask(userId: number, data: { title: string; descript
   return prisma.task.create({ data: { ...data, userId } });
 }
 
-export async function listTasks({ userId, status, q, page = 1, limit = 20 }: ListParams) {
-  const where: any = { userId };
+export async function listTasks({
+  userId,
+  status = 'all',
+  q = '',
+  page = 1,
+  limit = 20,
+}: ListParams) {
+  const where: Prisma.TaskWhereInput = { userId };
 
-  if (status === 'completed') where.completed = true;
-  if (status === 'pending') where.completed = false;
-  if (q)
+  if (status !== 'all') where.completed = status === 'completed';
+
+  if (q) {
     where.OR = [
       { title: { contains: q, mode: 'insensitive' } },
       { description: { contains: q, mode: 'insensitive' } },
     ];
+  }
 
-  return prisma.task.findMany({
-    where,
-    orderBy: { id: 'desc' },
-    skip: (page - 1) * limit,
-    take: limit,
-  });
+  const [items, total] = await Promise.all([
+    prisma.task.findMany({
+      where,
+      orderBy: { id: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.task.count({ where }),
+  ]);
+
+  return { items, page, limit, total, pages: Math.ceil(total / limit) };
 }
 
 export async function toggleTask(id: number, userId: number) {
