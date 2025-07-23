@@ -1,6 +1,6 @@
 # Todo-List API (Back-End)
 
-API REST construida con **Node.js + Express + TypeScript** y **PostgreSQL (Prisma)**  
+API REST construida con **Node.js + Express + TypeScript** y **PostgreSQL (Prisma)**
 Provee autenticación JWT y operaciones CRUD con paginación y filtros sobre tareas.
 
 ---
@@ -81,6 +81,8 @@ GET /api/tasks?status=pending&q=rent&page=2&limit=4
 ## Arquitectura Basada en Servicios
 
 La aplicación está organizada en módulos para facilitar la escalabilidad y el mantenimiento:
+
+```plaintext
 src/
 ├─ features/
 │ ├─ auth/
@@ -88,6 +90,7 @@ src/
 ├─ config/ # prisma client
 ├─ middlewares/ # authGuard, errorHandler
 └─ utils/ # funciones utilitarias
+```
 
 ## Desiciones técnicas clave
 
